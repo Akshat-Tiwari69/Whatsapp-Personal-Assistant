@@ -117,23 +117,30 @@ client.on('disconnected', (reason) => {
 });
 
 // ─── Message Handler ──────────────────────────────────────────────────────────
-client.on('message', async (msg) => {
-    // ── Debug: log every incoming message so we can diagnose filter issues ──
-    const senderRaw = msg.from;
-    const senderDigits = senderRaw.replace(/\D/g, '');
-    const yourDigits = YOUR_NUMBER.replace(/\D/g, '');
-    console.log(`[Debug] Incoming msg | from="${senderRaw}" | fromMe=${msg.fromMe} | type=${msg.type} | body="${(msg.body || '').substring(0, 60)}"`);
-    console.log(`[Debug] Number match check | senderDigits="${senderDigits}" | yourDigits="${yourDigits}" | match=${senderDigits === yourDigits}`);
+// We use 'message_create' (not 'message') because when you text yourself
+// (Saved Messages), you are the SENDER — whatsapp-web.js only fires
+// 'message_create' for outgoing/self messages, not 'message'.
+client.on('message_create', async (msg) => {
+    // ── Debug: log every event so we can see what's coming in ──
+    console.log(`[Debug] message_create | fromMe=${msg.fromMe} | from="${msg.from}" | to="${msg.to}" | type=${msg.type} | body="${(msg.body || '').substring(0, 60)}"`);
 
-    // Only respond to messages from yourself (personal assistant mode)
-    if (senderDigits !== yourDigits) {
-        console.log(`[Filter] Skipped — sender ${senderRaw} is not your number.`);
+    // Only process messages YOU sent (personal assistant mode)
+    if (!msg.fromMe) {
+        console.log('[Filter] Skipped — not sent by you.');
         return;
     }
 
-    // Ignore group messages (their IDs end with @g.us) and status broadcasts
-    if (senderRaw.endsWith('@g.us') || senderRaw === 'status@broadcast') {
-        console.log(`[Filter] Skipped — group or broadcast message.`);
+    // Ignore group messages and status broadcasts
+    if (msg.from.endsWith('@g.us') || msg.from === 'status@broadcast') {
+        console.log('[Filter] Skipped — group or broadcast.');
+        return;
+    }
+
+    // Only respond to messages sent to yourself (Saved Messages chat)
+    const yourDigits = YOUR_NUMBER.replace(/\D/g, '');
+    const toDigits = (msg.to || '').replace(/\D/g, '');
+    if (toDigits && toDigits !== yourDigits) {
+        console.log(`[Filter] Skipped — message sent to someone else (${msg.to}), not to yourself.`);
         return;
     }
 
