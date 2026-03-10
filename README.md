@@ -56,11 +56,7 @@ npm install
 ```
 
 ### 2. Set up environment variables
-Copy `.env.example` to `.env` and fill in your values:
-```bash
-cp .env.example .env
-```
-
+Create a `.env` file in the root:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 GOOGLE_CLIENT_ID=your_google_client_id
@@ -102,6 +98,8 @@ Scan the QR code in your terminal with WhatsApp to link your account.
 people       — id, name, aliases, notes, created_at
 events       — id, person_id, type, date, description, calendar_event_id, created_at
 watchlist    — id, title, type (anime/movie/show/other), status, created_at
+events       — id, person_id, type, date, calendar_event_id
+watchlist    — id, title, type (anime/movie/show), status, created_at
 todos        — id, task, due_date, done, created_at
 notes        — id, content, tags, created_at
 ```
@@ -122,6 +120,18 @@ notes        — id, content, tags, created_at
 | "Mark dentist as done" | Checks off the todo |
 | "Note: Think about switching to Rust" | Saves a free-form note |
 | "Create a meeting with Priya on Friday at 3pm" | Creates a Google Calendar event |
+## 🗺️ Roadmap
+
+- [ ] Voice message transcription (Whisper API)
+- [ ] Image saving — send a photo and tag it to a person or note
+- [ ] Recurring reminders ("every Monday remind me to log my hours")
+- [ ] Daily/weekly digest — morning summary of todos, birthdays this week
+- [ ] WhatsApp group support — assistant works inside a dedicated group
+- [ ] Web dashboard to browse and edit all stored memories
+- [ ] Export memory as JSON or Notion database
+- [ ] Multi-user support (each number gets its own isolated memory)
+- [ ] Sentiment-aware notes ("I'm stressed about X" stores differently)
+- [ ] Smart deduplication — warns if you're saving something you already saved
 
 ---
 
