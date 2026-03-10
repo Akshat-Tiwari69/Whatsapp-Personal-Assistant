@@ -120,7 +120,19 @@ client.on('disconnected', (reason) => {
 // We use 'message_create' (not 'message') because when you text yourself
 // (Saved Messages), you are the SENDER — whatsapp-web.js only fires
 // 'message_create' for outgoing/self messages, not 'message'.
+//
+// LOOP PREVENTION: msg.reply() also triggers message_create (fromMe=true).
+// We track IDs of messages the bot sends and skip them.
+const botSentIds = new Set();
+
 client.on('message_create', async (msg) => {
+    // Skip messages the bot itself sent (prevents infinite reply loop)
+    const msgId = msg.id && msg.id._serialized;
+    if (msgId && botSentIds.has(msgId)) {
+        botSentIds.delete(msgId);
+        return;
+    }
+
     // ── Debug: log every event so we can see what's coming in ──
     console.log(`[Debug] message_create | fromMe=${msg.fromMe} | from="${msg.from}" | to="${msg.to}" | type=${msg.type} | body="${(msg.body || '').substring(0, 60)}"`);
 
@@ -163,7 +175,11 @@ client.on('message_create', async (msg) => {
         const reply = await routeIntent(parsed, messageBody);
 
         if (reply) {
-            await msg.reply(reply);
+            const sentMsg = await msg.reply(reply);
+            // Track the sent message ID so message_create doesn't loop on it
+            if (sentMsg && sentMsg.id && sentMsg.id._serialized) {
+                botSentIds.add(sentMsg.id._serialized);
+            }
             console.log(`[Reply] Sent: "${reply.substring(0, 100)}${reply.length > 100 ? '...' : ''}"`);
         } else {
             console.log('[Reply] No reply generated.');
