@@ -11,9 +11,9 @@ function savePerson({ name, aliases = [], notes = '' }) {
     if (existing) {
         const existingAliases = JSON.parse(existing.aliases || '[]');
         const mergedAliases = [...new Set([...existingAliases, ...aliases])];
-        const mergedNotes = existing.notes
-            ? `${existing.notes}\n${notes}`.trim()
-            : notes;
+        const mergedNotes = notes
+            ? (existing.notes ? `${existing.notes}\n• ${notes}` : `• ${notes}`)
+            : existing.notes;
 
         db.prepare(`
             UPDATE people SET aliases = ?, notes = ? WHERE id = ?

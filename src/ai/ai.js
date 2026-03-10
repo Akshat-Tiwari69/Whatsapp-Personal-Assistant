@@ -163,6 +163,41 @@ Return only the rewritten sentence, nothing else.`
 }
 
 /**
+ * Synthesize all stored notes about a person into a coherent perspective summary
+ * @param {string} personName
+ * @param {string} allNotes  — all stored notes joined by bullets
+ * @returns {Promise<string>}
+ */
+async function synthesizePerspective(personName, allNotes) {
+    try {
+        const response = await openai.chat.completions.create({
+            model: MODEL,
+            messages: [
+                {
+                    role: 'system',
+                    content: `You are reading a person's private notes about someone they know. 
+Summarize these notes into a concise, thoughtful paragraph (3-5 sentences) that describes:
+- The user's perspective and relationship with this person
+- Key things to remember or be mindful of
+- The emotional tone of the relationship
+Write in second person ("You see X as..." / "Your relationship with X..."). 
+Do NOT invent details. Only use what is in the notes. Be honest but kind.`
+                },
+                {
+                    role: 'user',
+                    content: `Person: ${personName}\n\nNotes:\n${allNotes}`
+                }
+            ],
+            temperature: 0.4,
+            max_tokens: 200
+        });
+        return response.choices[0].message.content.trim();
+    } catch {
+        return allNotes; // fallback to raw notes
+    }
+}
+
+/**
  * Generate a natural language response using OpenAI
  * @param {string} systemContext  — background context about the result
  * @param {string} userMessage    — original user message
@@ -199,4 +234,4 @@ Rules you MUST follow:
     }
 }
 
-module.exports = { parseIntent, paraphraseNote, generateResponse };
+module.exports = { parseIntent, paraphraseNote, synthesizePerspective, generateResponse };

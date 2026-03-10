@@ -159,17 +159,32 @@ client.on('message_create', async (msg) => {
         return;
     }
 
-    console.log(`[Message] Processing: "${messageBody}"`);
+    // Only respond to messages prefixed with /WBOT (case-insensitive)
+    // This lets you use Saved Messages normally without triggering the bot
+    const TRIGGER = /^\/wbot\s*/i;
+    if (!TRIGGER.test(messageBody)) {
+        // Silent ignore — don't log to avoid spam
+        return;
+    }
+
+    // Strip the /WBOT prefix before sending to AI
+    const command = messageBody.replace(TRIGGER, '').trim();
+    if (!command) {
+        await msg.reply('Hi! Send "/WBOT <your command>" to use me. E.g. /WBOT What are my todos?');
+        return;
+    }
+
+    console.log(`[Message] Processing: "${command}"`);
 
     try {
-        // Parse the intent using Gemini
-        console.log('[Gemini] Parsing intent...');
-        const parsed = await parseIntent(messageBody);
+        // Parse the intent using AI
+        console.log('[AI] Parsing intent...');
+        const parsed = await parseIntent(command);
         console.log(`[Intent] Detected: ${parsed.intent} | data: ${JSON.stringify(parsed.data)}`);
 
         // Route to the appropriate handler
         console.log('[Router] Routing intent...');
-        const reply = await routeIntent(parsed, messageBody);
+        const reply = await routeIntent(parsed, command);
 
         if (reply) {
             await msg.reply(reply);

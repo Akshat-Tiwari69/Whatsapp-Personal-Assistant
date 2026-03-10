@@ -1,6 +1,6 @@
 const memory = require('./memory');
 const calendar = require('./calendar');
-const { generateResponse, paraphraseNote } = require('../ai/ai');
+const { generateResponse, paraphraseNote, synthesizePerspective } = require('../ai/ai');
 
 /**
  * Route a parsed intent to the appropriate handler and return a reply string
@@ -33,16 +33,21 @@ async function routeIntent(parsed, originalMessage) {
                     return generateResponse(`I don't have any info about ${data.name} yet.`, originalMessage);
                 }
 
-                const aliasList = profile.aliases.length > 0
-                    ? `Also known as: ${profile.aliases.join(', ')}. `
-                    : '';
-                const notesSummary = profile.notes ? `Notes: ${profile.notes}. ` : '';
+                // Synthesize all notes into a perspective summary
+                let perspectiveSummary = '';
+                if (profile.notes) {
+                    perspectiveSummary = await synthesizePerspective(profile.name, profile.notes);
+                }
+
                 const eventList = profile.events.length > 0
-                    ? `Events: ${profile.events.map(e => `${e.type} on ${e.date}`).join(', ')}.`
+                    ? `\n\nKey dates: ${profile.events.map(e => `${e.type} on ${e.date}`).join(', ')}.`
                     : '';
 
-                const ctx = `Profile for ${profile.name}. ${aliasList}${notesSummary}${eventList}`;
-                return generateResponse(ctx, originalMessage);
+                const reply = perspectiveSummary
+                    ? `${perspectiveSummary}${eventList}`
+                    : `I have ${profile.name} saved but no notes yet.${eventList}`;
+
+                return reply;
             }
 
             case 'UPDATE_PERSON': {
