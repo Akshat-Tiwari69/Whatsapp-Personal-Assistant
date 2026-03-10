@@ -96,8 +96,8 @@ client.on('message', async (msg) => {
 
     if (senderNumber !== yourNumber) return;
 
-    // Ignore group messages, media without captions, and status broadcasts
-    if (msg.isGroupMsg || msg.from === 'status@broadcast') return;
+    // Ignore group messages (their IDs end with @g.us) and status broadcasts
+    if (msg.from.endsWith('@g.us') || msg.from === 'status@broadcast') return;
 
     const messageBody = msg.body.trim();
     if (!messageBody) return;

@@ -41,9 +41,10 @@ async function createCalendarEvent({ title, date, time = null, description = '' 
         start = { dateTime: startDateTime, timeZone: TIMEZONE };
         end = { dateTime: endDateTime, timeZone: TIMEZONE };
     } else {
-        // All-day event
+        // All-day event — Google Calendar uses half-open [start, end),
+        // so end must be the day AFTER start.
         start = { date };
-        end = { date };
+        end = { date: nextDay(date) };
     }
 
     const event = {
@@ -96,7 +97,7 @@ async function updateCalendarEvent({ title, new_title, new_date, new_time }) {
             patch.end = { dateTime: `${new_date}T${incrementHour(new_time)}:00`, timeZone: TIMEZONE };
         } else {
             patch.start = { date: new_date };
-            patch.end = { date: new_date };
+            patch.end = { date: nextDay(new_date) };
         }
     }
 
@@ -162,6 +163,16 @@ function incrementHour(time) {
     const [h, m] = time.split(':').map(Number);
     const newH = (h + 1) % 24;
     return `${String(newH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * Return the next calendar day after a YYYY-MM-DD date string
+ * (required by Google Calendar API for all-day event end dates)
+ */
+function nextDay(dateStr) {
+    const d = new Date(dateStr);
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString().split('T')[0];
 }
 
 module.exports = {
