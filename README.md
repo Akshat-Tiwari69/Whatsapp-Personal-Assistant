@@ -96,6 +96,8 @@ Scan the QR code in your terminal with WhatsApp to link your account.
 
 ```
 people       — id, name, aliases, notes, created_at
+events       — id, person_id, type, date, description, calendar_event_id, created_at
+watchlist    — id, title, type (anime/movie/show/other), status, created_at
 events       — id, person_id, type, date, calendar_event_id
 watchlist    — id, title, type (anime/movie/show), status, created_at
 todos        — id, task, due_date, done, created_at
@@ -104,6 +106,20 @@ notes        — id, content, tags, created_at
 
 ---
 
+## 💬 Example Commands
+
+| What you say | What happens |
+|---|---|
+| "Save that John is my uni friend from Delhi" | Creates a person profile for John |
+| "What do I know about John?" | Returns John's full profile |
+| "John's birthday is March 15" | Saves the event, creates a calendar entry |
+| "I want to watch One Piece" | Adds One Piece to watchlist (anime) |
+| "What's on my watchlist?" | Returns your full watchlist |
+| "Remind me to call the dentist Friday" | Creates a todo with due date |
+| "What are my pending todos?" | Lists all open todos |
+| "Mark dentist as done" | Checks off the todo |
+| "Note: Think about switching to Rust" | Saves a free-form note |
+| "Create a meeting with Priya on Friday at 3pm" | Creates a Google Calendar event |
 ## 🗺️ Roadmap
 
 - [ ] Voice message transcription (Whisper API)
@@ -134,10 +150,27 @@ whatsapp-assistant/
 │   └── db/
 │       ├── schema.sql    # Database schema
 │       └── db.js         # DB connection
+├── scripts/
+│   └── auth.js           # Google OAuth2 setup helper
 ├── .env.example
 ├── package.json
 └── README.md
 ```
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] Voice message transcription (Whisper API)
+- [ ] Image saving — send a photo and tag it to a person or note
+- [ ] Recurring reminders ("every Monday remind me to log my hours")
+- [ ] Daily/weekly digest — morning summary of todos, birthdays this week
+- [ ] WhatsApp group support — assistant works inside a dedicated group
+- [ ] Web dashboard to browse and edit all stored memories
+- [ ] Export memory as JSON or Notion database
+- [ ] Multi-user support (each number gets its own isolated memory)
+- [ ] Sentiment-aware notes ("I'm stressed about X" stores differently)
+- [ ] Smart deduplication — warns if you're saving something you already saved
 
 ---
 
