@@ -1,7 +1,7 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const OpenAI = require('openai');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const MODEL = 'gpt-4o-mini';
 
 /**
  * Build the system prompt with the current date injected at call time,
@@ -76,24 +76,30 @@ Rules:
 }
 
 /**
- * Parse a user message into a structured intent using Gemini
+ * Parse a user message into a structured intent using OpenAI
  * @param {string} userMessage
  * @returns {Promise<{intent: string, data: object}>}
  */
 async function parseIntent(userMessage) {
-    const prompt = `${buildSystemPrompt()}\n\nUser message: "${userMessage}"`;
-
     try {
-        const result = await model.generateContent(prompt);
-        const text = result.response.text().trim();
+        const response = await openai.chat.completions.create({
+            model: MODEL,
+            messages: [
+                { role: 'system', content: buildSystemPrompt() },
+                { role: 'user', content: userMessage }
+            ],
+            temperature: 0,
+            max_tokens: 300
+        });
+
+        const text = response.choices[0].message.content.trim();
 
         // Strip markdown code fences if present
         const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
 
-        const parsed = JSON.parse(cleaned);
-        return parsed;
+        return JSON.parse(cleaned);
     } catch (err) {
-        console.error('[Gemini] Error parsing intent:', err.message);
+        console.error('[OpenAI] Error parsing intent:', err.message);
         return {
             intent: 'UNKNOWN',
             data: { message: 'Sorry, I could not understand that. Could you rephrase?' }
@@ -102,22 +108,32 @@ async function parseIntent(userMessage) {
 }
 
 /**
- * Generate a natural language response using Gemini
+ * Generate a natural language response using OpenAI
  * @param {string} systemContext  — background context about the result
  * @param {string} userMessage    — original user message
  * @returns {Promise<string>}
  */
 async function generateResponse(systemContext, userMessage) {
-    const prompt = `You are a friendly personal assistant on WhatsApp. 
-Context: ${systemContext}
-User said: "${userMessage}"
-Reply naturally in 1-3 short sentences. Be concise and warm. No markdown.`;
-
     try {
-        const result = await model.generateContent(prompt);
-        return result.response.text().trim();
+        const response = await openai.chat.completions.create({
+            model: MODEL,
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are a friendly personal assistant on WhatsApp. Reply naturally in 1-3 short sentences. Be concise and warm. No markdown.'
+                },
+                {
+                    role: 'user',
+                    content: `Context: ${systemContext}\nUser said: "${userMessage}"`
+                }
+            ],
+            temperature: 0.7,
+            max_tokens: 150
+        });
+
+        return response.choices[0].message.content.trim();
     } catch (err) {
-        console.error('[Gemini] Error generating response:', err.message);
+        console.error('[OpenAI] Error generating response:', err.message);
         return systemContext;
     }
 }

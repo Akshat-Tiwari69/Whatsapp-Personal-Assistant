@@ -6,7 +6,7 @@ const { parseIntent } = require('./ai/gemini');
 const { routeIntent } = require('./handlers/router');
 
 // Validate required environment variables
-const REQUIRED_ENV = ['GEMINI_API_KEY', 'YOUR_WHATSAPP_NUMBER'];
+const REQUIRED_ENV = ['OPENAI_API_KEY', 'YOUR_WHATSAPP_NUMBER'];
 const missing = REQUIRED_ENV.filter(k => !process.env[k]);
 if (missing.length > 0) {
     console.error(`[Config] Missing required environment variables: ${missing.join(', ')}`);
@@ -19,7 +19,7 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 
 console.log(`[Config] YOUR_WHATSAPP_NUMBER = "${YOUR_NUMBER}"`);
 console.log(`[Config] Normalized digits only = "${YOUR_NUMBER.replace(/\D/g, '')}"`);
-console.log(`[Config] GEMINI_API_KEY set = ${!!process.env.GEMINI_API_KEY}`);
+console.log(`[Config] OPENAI_API_KEY set = ${!!process.env.OPENAI_API_KEY}`);
 console.log(`[Config] GOOGLE_REFRESH_TOKEN set = ${!!process.env.GOOGLE_REFRESH_TOKEN}`);
 console.log(`[Config] CHROME_PATH = "${process.env.CHROME_PATH || '(not set, using bundled Chromium)'}"`);
 
