@@ -97,6 +97,20 @@ function saveEvent({ person_name, type, date, description = '', calendar_event_i
 }
 
 /**
+ * Replace a person's notes entirely (used when user says something changed)
+ */
+function updatePersonNotes(name, newNotes) {
+    const person = findPersonByName(name);
+    if (!person) return null;
+
+    const timestamp = new Date().toISOString().split('T')[0];
+    const timestampedNote = `${newNotes} (updated ${timestamp})`;
+
+    db.prepare(`UPDATE people SET notes = ? WHERE id = ?`).run(timestampedNote, person.id);
+    return { ...person, notes: timestampedNote };
+}
+
+/**
  * Update the calendar_event_id for a saved event
  */
 function updateEventCalendarId(eventId, calendarEventId) {
@@ -221,6 +235,7 @@ module.exports = {
     savePerson,
     findPersonByName,
     getPersonProfile,
+    updatePersonNotes,
     saveEvent,
     updateEventCalendarId,
     saveWatchlistItem,

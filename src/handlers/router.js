@@ -41,6 +41,15 @@ async function routeIntent(parsed, originalMessage) {
                 return generateResponse(ctx, originalMessage);
             }
 
+            case 'UPDATE_PERSON': {
+                const updated = memory.updatePersonNotes(data.name, data.notes);
+                if (!updated) {
+                    return generateResponse(`I don't have anyone called ${data.name} in my memory yet. Try saving them first.`, originalMessage);
+                }
+                const ctx = `Updated notes for ${updated.name}. Previous notes have been replaced with: "${data.notes}"`;
+                return generateResponse(ctx, originalMessage);
+            }
+
             // ── Events ────────────────────────────────────────────────────────
             case 'SAVE_EVENT': {
                 const savedEvent = memory.saveEvent(data);
