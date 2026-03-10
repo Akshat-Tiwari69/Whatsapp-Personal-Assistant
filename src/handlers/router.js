@@ -1,6 +1,6 @@
 const memory = require('./memory');
 const calendar = require('./calendar');
-const { generateResponse } = require('../ai/gemini');
+const { generateResponse } = require('../ai/ai');
 
 /**
  * Route a parsed intent to the appropriate handler and return a reply string

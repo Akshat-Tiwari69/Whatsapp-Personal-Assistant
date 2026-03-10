@@ -2,7 +2,7 @@ require('dotenv').config();
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const express = require('express');
-const { parseIntent } = require('./ai/gemini');
+const { parseIntent } = require('./ai/ai');
 const { routeIntent } = require('./handlers/router');
 
 // Validate required environment variables
