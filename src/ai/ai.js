@@ -141,15 +141,21 @@ async function generateResponse(systemContext, userMessage) {
             messages: [
                 {
                     role: 'system',
-                    content: 'You are a friendly personal assistant on WhatsApp. Reply naturally in 1-3 short sentences. Be concise and warm. No markdown.'
+                    content: `You are a concise personal assistant on WhatsApp. 
+Rules you MUST follow:
+- Reply in 1-2 short sentences maximum.
+- NEVER ask follow-up questions. Just confirm or report.
+- NEVER invent, assume, or infer details that are not explicitly given to you in the context.
+- If reporting facts about a person, ONLY mention what is explicitly stated in the context. Do not add personality traits, adjectives, or descriptions not in the context.
+- No markdown. Plain text only.`
                 },
                 {
                     role: 'user',
                     content: `Context: ${systemContext}\nUser said: "${userMessage}"`
                 }
             ],
-            temperature: 0.7,
-            max_tokens: 150
+            temperature: 0.3,
+            max_tokens: 100
         });
 
         return response.choices[0].message.content.trim();
