@@ -1,6 +1,6 @@
 const memory = require('./memory');
 const calendar = require('./calendar');
-const { generateResponse } = require('../ai/ai');
+const { generateResponse, paraphraseNote } = require('../ai/ai');
 
 /**
  * Route a parsed intent to the appropriate handler and return a reply string
@@ -16,6 +16,10 @@ async function routeIntent(parsed, originalMessage) {
 
             // ── People ────────────────────────────────────────────────────────
             case 'SAVE_PERSON': {
+                // Paraphrase raw user notes before storing for cleaner retrieval
+                if (data.notes) {
+                    data.notes = await paraphraseNote(data.notes);
+                }
                 const result = memory.savePerson(data);
                 const ctx = result.updated
                     ? `Updated profile for ${result.name}.`
@@ -148,6 +152,10 @@ async function routeIntent(parsed, originalMessage) {
 
             // ── Notes ─────────────────────────────────────────────────────────
             case 'SAVE_NOTE': {
+                // Paraphrase raw notes for cleaner storage and retrieval
+                if (data.content) {
+                    data.content = await paraphraseNote(data.content);
+                }
                 const note = memory.saveNote(data);
                 const ctx = `Saved note: "${note.content.substring(0, 60)}${note.content.length > 60 ? '...' : ''}"`;
                 return generateResponse(ctx, originalMessage);

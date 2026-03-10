@@ -129,6 +129,40 @@ async function parseIntent(userMessage) {
 }
 
 /**
+ * Paraphrase a raw user note into a clean, natural insight for storage
+ * @param {string} rawNote
+ * @returns {Promise<string>}
+ */
+async function paraphraseNote(rawNote) {
+    try {
+        const response = await openai.chat.completions.create({
+            model: MODEL,
+            messages: [
+                {
+                    role: 'system',
+                    content: `Rewrite the user's raw thought into a clean, concise insight in 1 sentence.
+Rules:
+- Write in third person or as a neutral observation (not "I should..." — instead "Be..." or "X tends to...")
+- Keep the core meaning exactly intact. Do not add details not mentioned.
+- Be factual and brief. No fluff.
+- Examples:
+  "I should not be egoistic in front of Unnatee" → "Avoid letting ego interfere with Unnatee."
+  "Rahul is very sensitive about his work never push him" → "Rahul is sensitive about his work; avoid pushing him."
+  "My friendship with Priya is at a good place rn" → "Friendship with Priya is currently in a good place."
+Return only the rewritten sentence, nothing else.`
+                },
+                { role: 'user', content: rawNote }
+            ],
+            temperature: 0.3,
+            max_tokens: 80
+        });
+        return response.choices[0].message.content.trim();
+    } catch {
+        return rawNote; // fallback: store as-is if paraphrase fails
+    }
+}
+
+/**
  * Generate a natural language response using OpenAI
  * @param {string} systemContext  — background context about the result
  * @param {string} userMessage    — original user message
@@ -165,4 +199,4 @@ Rules you MUST follow:
     }
 }
 
-module.exports = { parseIntent, generateResponse };
+module.exports = { parseIntent, paraphraseNote, generateResponse };
