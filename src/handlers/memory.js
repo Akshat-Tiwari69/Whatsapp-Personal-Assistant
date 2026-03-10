@@ -231,6 +231,76 @@ function getNotes(query = null) {
     `).all(lower, lower);
 }
 
+// ─── Assignments ──────────────────────────────────────────────────────────────
+
+/**
+ * Save a new assignment, exam, project, quiz, or lab
+ */
+function saveAssignment({ subject, title, type = 'assignment', due_date = null }) {
+    const result = db.prepare(`
+        INSERT INTO assignments (subject, title, type, due_date)
+        VALUES (?, ?, ?, ?)
+    `).run(subject, title, type, due_date);
+
+    return { id: result.lastInsertRowid, subject, title, type, due_date, status: 'pending' };
+}
+
+/**
+ * Get assignments, filtered by status and/or subject and/or type
+ */
+function getAssignments({ status = 'pending', subject = null, type = null } = {}) {
+    let query = 'SELECT * FROM assignments WHERE 1=1';
+    const params = [];
+
+    if (status && status !== 'all') {
+        query += ' AND status = ?';
+        params.push(status);
+    }
+    if (subject) {
+        query += ' AND LOWER(subject) LIKE ?';
+        params.push(`%${subject.toLowerCase()}%`);
+    }
+    if (type) {
+        query += ' AND type = ?';
+        params.push(type);
+    }
+
+    query += ' ORDER BY due_date ASC, created_at DESC';
+    return db.prepare(query).all(...params);
+}
+
+/**
+ * Mark an assignment as submitted
+ */
+function submitAssignment(titleOrSubject) {
+    const item = db.prepare(`
+        SELECT * FROM assignments
+        WHERE (LOWER(title) LIKE ? OR LOWER(subject) LIKE ?) AND status = 'pending'
+        ORDER BY due_date ASC LIMIT 1
+    `).get(`%${titleOrSubject.toLowerCase()}%`, `%${titleOrSubject.toLowerCase()}%`);
+
+    if (!item) return null;
+
+    db.prepare(`UPDATE assignments SET status = 'submitted' WHERE id = ?`).run(item.id);
+    return { ...item, status: 'submitted' };
+}
+
+/**
+ * Record a grade for an assignment
+ */
+function gradeAssignment(titleOrSubject, grade) {
+    const item = db.prepare(`
+        SELECT * FROM assignments
+        WHERE LOWER(title) LIKE ? OR LOWER(subject) LIKE ?
+        ORDER BY created_at DESC LIMIT 1
+    `).get(`%${titleOrSubject.toLowerCase()}%`, `%${titleOrSubject.toLowerCase()}%`);
+
+    if (!item) return null;
+
+    db.prepare(`UPDATE assignments SET status = 'graded', grade = ? WHERE id = ?`).run(grade, item.id);
+    return { ...item, status: 'graded', grade };
+}
+
 module.exports = {
     savePerson,
     findPersonByName,
@@ -245,5 +315,9 @@ module.exports = {
     getTodos,
     completeTodo,
     saveNote,
-    getNotes
+    getNotes,
+    saveAssignment,
+    getAssignments,
+    submitAssignment,
+    gradeAssignment
 };

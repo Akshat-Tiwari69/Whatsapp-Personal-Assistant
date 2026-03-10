@@ -198,10 +198,52 @@ async function routeIntent(parsed, originalMessage) {
                 return generateResponse(`Deleted the calendar event "${data.title}".`, originalMessage);
             }
 
+            // ── Assignments ───────────────────────────────────────────────────
+            case 'SAVE_ASSIGNMENT': {
+                const item = memory.saveAssignment(data);
+                const due = item.due_date ? ` due ${item.due_date}` : '';
+                const ctx = `Saved ${item.type} "${item.title}" for ${item.subject}${due}.`;
+                return generateResponse(ctx, originalMessage);
+            }
+
+            case 'GET_ASSIGNMENTS': {
+                const items = memory.getAssignments({
+                    status: data.status || 'pending',
+                    subject: data.subject || null,
+                    type: data.type || null
+                });
+                if (items.length === 0) {
+                    return generateResponse('No assignments found matching that filter.', originalMessage);
+                }
+                const list = items.map(a => {
+                    const due = a.due_date ? ` — due ${a.due_date}` : '';
+                    const grade = a.grade ? ` [${a.grade}]` : '';
+                    const emoji = a.type === 'exam' ? '📝' : a.type === 'project' ? '🗂️' : a.type === 'quiz' ? '❓' : a.type === 'lab' ? '🔬' : '📚';
+                    return `${emoji} [${a.subject}] ${a.title}${due}${grade}`;
+                }).join('\n');
+                return generateResponse(`Here are your assignments:\n${list}`, originalMessage);
+            }
+
+            case 'SUBMIT_ASSIGNMENT': {
+                const submitted = memory.submitAssignment(data.title);
+                if (!submitted) {
+                    return generateResponse(`Couldn't find a pending assignment matching "${data.title}".`, originalMessage);
+                }
+                return generateResponse(`Marked "${submitted.title}" (${submitted.subject}) as submitted! ✅`, originalMessage);
+            }
+
+            case 'GRADE_ASSIGNMENT': {
+                const graded = memory.gradeAssignment(data.title, data.grade);
+                if (!graded) {
+                    return generateResponse(`Couldn't find an assignment matching "${data.title}".`, originalMessage);
+                }
+                return generateResponse(`Recorded ${data.grade} for "${graded.title}" (${graded.subject}). 🎯`, originalMessage);
+            }
+
             // ── Fallback ──────────────────────────────────────────────────────
             case 'UNKNOWN':
             default: {
-                const hint = "I can save notes, todos, people, watchlist items, and calendar events. Try: \"Note: ...\", \"Remind me to...\", or \"I want to watch...\"";
+                const hint = "I can save notes, todos, people, watchlist items, assignments, exams and calendar events. Try: \"DS assignment due Friday\", \"ML exam on March 20\", \"Remind me to...\", or \"I want to watch...\"";
                 const ctx = data.message || hint;
                 return generateResponse(ctx, originalMessage);
             }

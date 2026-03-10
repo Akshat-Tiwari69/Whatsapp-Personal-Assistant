@@ -67,6 +67,18 @@ Supported intents and their data shapes:
 16. UPDATE_PERSON — replace/correct what you know about a person (use when user says something has changed or they want to correct a previous note)
     data: { "name": "string", "notes": "string" }
 
+17. SAVE_ASSIGNMENT — save an assignment, exam, project, quiz, or lab
+    data: { "subject": "string", "title": "string", "type": "assignment|exam|project|quiz|lab", "due_date": "YYYY-MM-DD|null" }
+
+18. GET_ASSIGNMENTS — retrieve assignments
+    data: { "status": "pending|submitted|graded|all", "subject": "string|null", "type": "assignment|exam|project|quiz|lab|null" }
+
+19. SUBMIT_ASSIGNMENT — mark an assignment as submitted/done
+    data: { "title": "string" }
+
+20. GRADE_ASSIGNMENT — record a grade received for an assignment
+    data: { "title": "string", "grade": "string" }
+
 Rules:
 - Dates should be in YYYY-MM-DD format when possible. Use the current year if not specified.
 - If the user says "remind me to X on Y", use SAVE_TODO with due_date and also CREATE_CALENDAR_EVENT if a specific date is mentioned.
@@ -74,6 +86,9 @@ Rules:
 - If the user says "I want to watch X", use SAVE_WATCHLIST.
 - If the message contains a personal insight, reflection, or note ABOUT a specific named person — their personality, how to interact with them, the relationship dynamic, feelings about them (e.g. "I should never have my ego in front of Unnatee", "Rahul is very sensitive about his work", "My friendship with Priya is going well") — use SAVE_PERSON with the insight in the notes field. Keep notes factual and concise.
 - If the user says something about a person HAS CHANGED, or wants to correct/update/replace what they previously noted (e.g. "Actually Rahul has changed, he's confident now", "Update: Priya and I are in a rough patch", "Correct my note about X") — use UPDATE_PERSON with the new corrected notes.
+- If the user mentions an assignment, exam, project, quiz, or lab (e.g. "DS assignment due Friday", "ML exam on March 20", "submit OS lab by tonight") — use SAVE_ASSIGNMENT. Infer type from context (exam/quiz/lab/project/assignment).
+- If the user says they submitted or completed an assignment — use SUBMIT_ASSIGNMENT.
+- If the user mentions a grade or score they received — use GRADE_ASSIGNMENT.
 - Generic personal reflections, life lessons, or thoughts NOT about a specific person (e.g. "I should meditate more", "I feel stressed today") should be saved as SAVE_NOTE.
 - If no intent matches, use UNKNOWN with a helpful message suggesting what they can do.
 - Always extract person names when mentioned.

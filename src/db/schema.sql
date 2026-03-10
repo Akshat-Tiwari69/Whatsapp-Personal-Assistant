@@ -41,3 +41,14 @@ CREATE TABLE IF NOT EXISTS notes (
     tags TEXT DEFAULT '[]',       -- JSON array of tags
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS assignments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject TEXT NOT NULL,        -- e.g. 'Data Structures', 'ML', 'OS'
+    title TEXT NOT NULL,          -- e.g. 'Linked List implementation'
+    type TEXT DEFAULT 'assignment', -- 'assignment', 'exam', 'project', 'quiz', 'lab'
+    due_date TEXT,                -- ISO 8601 date string
+    status TEXT DEFAULT 'pending', -- 'pending', 'submitted', 'graded'
+    grade TEXT,                   -- e.g. '8/10', 'A', '85%'
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
