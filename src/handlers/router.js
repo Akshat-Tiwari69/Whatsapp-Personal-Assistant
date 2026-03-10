@@ -191,8 +191,11 @@ async function routeIntent(parsed, originalMessage) {
 
             // ── Fallback ──────────────────────────────────────────────────────
             case 'UNKNOWN':
-            default:
-                return data.message || "I'm not sure how to help with that. Try asking me to save a note, add a todo, or check your watchlist!";
+            default: {
+                const hint = "I can save notes, todos, people, watchlist items, and calendar events. Try: \"Note: ...\", \"Remind me to...\", or \"I want to watch...\"";
+                const ctx = data.message || hint;
+                return generateResponse(ctx, originalMessage);
+            }
         }
     } catch (err) {
         console.error('[Router] Error handling intent:', intent, err.message);
