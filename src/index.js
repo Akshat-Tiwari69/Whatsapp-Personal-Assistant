@@ -17,6 +17,12 @@ if (missing.length > 0) {
 const YOUR_NUMBER = process.env.YOUR_WHATSAPP_NUMBER;
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
+console.log(`[Config] YOUR_WHATSAPP_NUMBER = "${YOUR_NUMBER}"`);
+console.log(`[Config] Normalized digits only = "${YOUR_NUMBER.replace(/\D/g, '')}"`);
+console.log(`[Config] GEMINI_API_KEY set = ${!!process.env.GEMINI_API_KEY}`);
+console.log(`[Config] GOOGLE_REFRESH_TOKEN set = ${!!process.env.GOOGLE_REFRESH_TOKEN}`);
+console.log(`[Config] CHROME_PATH = "${process.env.CHROME_PATH || '(not set, using bundled Chromium)'}"`);
+
 // ─── Express health server ────────────────────────────────────────────────────
 const app = express();
 app.use(express.json());
@@ -59,12 +65,22 @@ const puppeteerOptions = {
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
         '--no-zygote',
-        '--single-process',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--disable-background-networking',
+        '--disable-default-apps',
+        '--disable-extensions',
+        '--disable-sync',
+        '--disable-translate',
+        '--metrics-recording-only',
+        '--mute-audio',
+        '--safebrowsing-disable-auto-update'
     ]
 };
 if (process.env.CHROME_PATH) {
     puppeteerOptions.executablePath = process.env.CHROME_PATH;
+    console.log(`[Puppeteer] Using system Chrome at: ${process.env.CHROME_PATH}`);
+} else {
+    console.log('[Puppeteer] Using Puppeteer bundled Chromium');
 }
 
 const client = new Client({
@@ -79,6 +95,10 @@ client.on('qr', (qr) => {
     qrcode.generate(qr, { small: true });
 });
 
+client.on('loading_screen', (percent, message) => {
+    console.log(`[WhatsApp] Loading: ${percent}% — ${message}`);
+});
+
 client.on('authenticated', () => {
     console.log('[WhatsApp] Authenticated successfully.');
 });
@@ -89,6 +109,7 @@ client.on('auth_failure', (msg) => {
 
 client.on('ready', () => {
     console.log('[WhatsApp] Client is ready! Listening for messages...');
+    console.log(`[WhatsApp] Watching for messages from: ${YOUR_NUMBER}`);
 });
 
 client.on('disconnected', (reason) => {
@@ -97,35 +118,52 @@ client.on('disconnected', (reason) => {
 
 // ─── Message Handler ──────────────────────────────────────────────────────────
 client.on('message', async (msg) => {
-    // Only respond to messages from yourself (personal assistant mode)
-    // Normalize both numbers to digits only for a consistent comparison
-    const senderNumber = msg.from.replace(/\D/g, '');
-    const yourNumber = YOUR_NUMBER.replace(/\D/g, '');
+    // ── Debug: log every incoming message so we can diagnose filter issues ──
+    const senderRaw = msg.from;
+    const senderDigits = senderRaw.replace(/\D/g, '');
+    const yourDigits = YOUR_NUMBER.replace(/\D/g, '');
+    console.log(`[Debug] Incoming msg | from="${senderRaw}" | fromMe=${msg.fromMe} | type=${msg.type} | body="${(msg.body || '').substring(0, 60)}"`);
+    console.log(`[Debug] Number match check | senderDigits="${senderDigits}" | yourDigits="${yourDigits}" | match=${senderDigits === yourDigits}`);
 
-    if (senderNumber !== yourNumber) return;
+    // Only respond to messages from yourself (personal assistant mode)
+    if (senderDigits !== yourDigits) {
+        console.log(`[Filter] Skipped — sender ${senderRaw} is not your number.`);
+        return;
+    }
 
     // Ignore group messages (their IDs end with @g.us) and status broadcasts
-    if (msg.from.endsWith('@g.us') || msg.from === 'status@broadcast') return;
+    if (senderRaw.endsWith('@g.us') || senderRaw === 'status@broadcast') {
+        console.log(`[Filter] Skipped — group or broadcast message.`);
+        return;
+    }
 
-    const messageBody = msg.body.trim();
-    if (!messageBody) return;
+    const messageBody = (msg.body || '').trim();
+    if (!messageBody) {
+        console.log('[Filter] Skipped — empty message body.');
+        return;
+    }
 
-    console.log(`[Message] Received: "${messageBody}"`);
+    console.log(`[Message] Processing: "${messageBody}"`);
 
     try {
         // Parse the intent using Gemini
+        console.log('[Gemini] Parsing intent...');
         const parsed = await parseIntent(messageBody);
-        console.log(`[Intent] Detected: ${parsed.intent}`, JSON.stringify(parsed.data));
+        console.log(`[Intent] Detected: ${parsed.intent} | data: ${JSON.stringify(parsed.data)}`);
 
         // Route to the appropriate handler
+        console.log('[Router] Routing intent...');
         const reply = await routeIntent(parsed, messageBody);
 
         if (reply) {
             await msg.reply(reply);
-            console.log(`[Reply] Sent: "${reply.substring(0, 80)}${reply.length > 80 ? '...' : ''}"`);
+            console.log(`[Reply] Sent: "${reply.substring(0, 100)}${reply.length > 100 ? '...' : ''}"`);
+        } else {
+            console.log('[Reply] No reply generated.');
         }
     } catch (err) {
-        console.error('[Handler] Unhandled error:', err);
+        console.error('[Handler] Unhandled error:', err.message);
+        console.error(err.stack);
         await msg.reply('Sorry, something went wrong. Please try again.');
     }
 });
@@ -145,4 +183,9 @@ process.on('SIGINT', async () => {
     console.log('[Shutdown] SIGINT received, closing gracefully...');
     await client.destroy();
     process.exit(0);
+});
+
+// Catch unhandled promise rejections so PM2 doesn't silently swallow them
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[Process] Unhandled Promise Rejection:', reason);
 });
