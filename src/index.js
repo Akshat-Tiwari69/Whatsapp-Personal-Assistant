@@ -48,22 +48,30 @@ app.listen(PORT, () => {
 });
 
 // ─── WhatsApp Client ──────────────────────────────────────────────────────────
+// On ARM servers (e.g. Oracle Cloud), point CHROME_PATH to the system Chromium:
+//   CHROME_PATH=/usr/bin/chromium-browser
+// Leave unset on Windows / x86 to use Puppeteer's bundled Chromium.
+const puppeteerOptions = {
+    args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+    ]
+};
+if (process.env.CHROME_PATH) {
+    puppeteerOptions.executablePath = process.env.CHROME_PATH;
+}
+
 const client = new Client({
     authStrategy: new LocalAuth({
         dataPath: '.wwebjs_auth'
     }),
-    puppeteer: {
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process',
-            '--disable-gpu'
-        ]
-    }
+    puppeteer: puppeteerOptions
 });
 
 client.on('qr', (qr) => {
